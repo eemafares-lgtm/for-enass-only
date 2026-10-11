@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>For Enass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600;1,9..144,800&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one centered stage, hearts drifting up behind a big italic name, one button that opens a short message. */
+:root {
+  --bg: #2a0f24;
+  --bg-glow: #5a1a45;
+  --fg: #fff1f5;
+  --muted: #efbfd0;
+  --accent: #ff5c8a;
+  --gold: #ffd9a0;
+  --card: rgba(255, 241, 245, 0.08);
+  --card-line: rgba(255, 217, 160, 0.35);
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  padding-block: 32px;
+  padding-inline: 16px;
+  background: radial-gradient(ellipse at 50% 30%, var(--bg-glow) 0%, var(--bg) 70%);
+  color: var(--fg);
+  font-family: var(--body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+}
+#hearts { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  min-width: 0;
+}
+.eyebrow {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.big-heart { width: 72px; height: 72px; animation: beat 1.3s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(255, 92, 138, 0.7)); }
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(4rem, 22vw, 8rem);
+  line-height: 1;
+  text-wrap: balance;
+  background: linear-gradient(135deg, #ffc2d4 0%, var(--accent) 55%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-inline: 0.1em;
+}
+.sub { margin: 0; max-width: 34ch; font-size: 1.1rem; line-height: 1.5; color: var(--muted); }
+button {
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.05rem;
+  padding: 14px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #ff8aa8);
+  color: #3a0a22;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255, 92, 138, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+button:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 12px 30px rgba(255, 92, 138, 0.55); }
+button:active { transform: scale(0.97); }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.note {
+  width: 100%;
+  padding: 24px 22px;
+  border: 1px solid var(--card-line);
+  border-radius: 20px;
+  background: var(--card);
+  backdrop-filter: blur(6px);
+  animation: rise 0.7s ease both;
+}
+.note p { margin: 0 0 12px; font-size: 1.1rem; line-height: 1.65; }
+.note p:last-child { margin: 0; }
+.sign { font-family: var(--display); font-style: italic; font-size: 1.3rem; color: var(--gold); }
+@keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.12); } }
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .big-heart, .note { animation: none; }
+  button { transition: none; }
+}
+</style>
+
+<canvas id="hearts" aria-hidden="true"></canvas>
+
+<main class="stage">
+  <p class="eyebrow">A little surprise for you</p>
+  <svg class="big-heart" viewBox="0 0 32 29" aria-hidden="true">
+    <path fill="#ff5c8a" d="M16 28.5C-6 14 4 -3 16 6.5 28 -3 38 14 16 28.5z"/>
+  </svg>
+  <h1>Enass</h1>
+  <p class="sub">Someone made this page just for you, because you deserve something sweet.</p>
+  <button id="open" type="button">Open your surprise</button>
+
+  <section class="note" id="note" hidden aria-live="polite">
+    <p>Enass, you make ordinary days feel lighter. Your kindness and your laugh are things I am really grateful for.</p>
+    <p>Thank you for being such a good friend. I hope this page puts a big smile on your face today.</p>
+    <p class="sign">With all my love, Fares</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var canvas = document.getElementById('hearts');
+  var ctx = canvas.getContext('2d');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var colors = ['#ff5c8a', '#ff8aa8', '#ffc2d4', '#ffd9a0', '#ff3d73'];
+  var hearts = [];
+  var w = 0, h = 0;
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawHeart(x, y, s, rot, color, alpha) {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot);
+    ctx.globalAlpha = alpha; ctx.fillStyle = color;
+    ctx.beginPath();
+    for (var i = 0; i <= 40; i++) {
+      var t = (i / 40) * Math.PI * 2;
+      var px = 16 * Math.pow(Math.sin(t), 3);
+      var py = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+      var k = s / 16;
+      if (i === 0) ctx.moveTo(px * k, py * k); else ctx.lineTo(px * k, py * k);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function floater(startAnywhere) {
+    return {
+      x: Math.random() * w,
+      y: startAnywhere ? Math.random() * h : h + 30,
+      s: 6 + Math.random() * 16,
+      vy: -(0.4 + Math.random() * 0.9),
+      vx: 0,
+      sway: Math.random() * Math.PI * 2,
+      rot: (Math.random() - 0.5) * 0.6,
+      c: colors[Math.floor(Math.random() * colors.length)],
+      a: 0.25 + Math.random() * 0.5,
+      burst: false
+    };
+  }
+
+  function burst() {
+    var cx = w / 2, cy = h / 2;
+    for (var i = 0; i < 46; i++) {
+      var ang = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+      hearts.push({
+        x: cx, y: cy, s: 8 + Math.random() * 18,
+        vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 1.5,
+        sway: 0, rot: (Math.random() - 0.5) * 0.8,
+        c: colors[Math.floor(Math.random() * colors.length)],
+        a: 1, burst: true
+      });
+    }
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, w, h);
+    if (!reduce && hearts.length < 36 && Math.random() < 0.08) hearts.push(floater(false));
+    for (var i = hearts.length - 1; i >= 0; i--) {
+      var p = hearts[i];
+      if (p.burst) {
+        p.vy += 0.07; p.vx *= 0.99; p.a -= 0.008;
+      } else {
+        p.sway += 0.02; p.vx = Math.sin(p.sway) * 0.4;
+      }
+      p.x += p.vx; p.y += p.vy;
+      if (p.a <= 0 || p.y < -40 || p.y > h + 60) { hearts.splice(i, 1); continue; }
+      drawHeart(p.x, p.y, p.s, p.rot, p.c, Math.max(p.a, 0));
+    }
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  if (!reduce) { for (var j = 0; j < 22; j++) hearts.push(floater(true)); }
+  requestAnimationFrame(tick);
+
+  var btn = document.getElementById('open');
+  var note = document.getElementById('note');
+  btn.addEventListener('click', function () {
+    note.hidden = false;
+    btn.textContent = 'More hearts for Enass';
+    burst();
+    note.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  });
+})();
+</script>
+
+</body>
+</html>
